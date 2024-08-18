@@ -9,6 +9,8 @@ if not FileExist("settings.ini")
 {
 	IniWrite "", "settings.ini", "Settings", "PrivateSrverLink"
 	IniWrite "Select File...", "settings.ini", "Settings", "SelectedAudioFile"
+	IniWrite "", "settings.ini", "Settings", "WebhookURL"
+	IniWrite "", "settings.ini", "Settings", "DiscordUserID"
 }
 
 MyGui := Gui(,"Twisted Macro by oopsi9943")
@@ -16,6 +18,10 @@ MyGui.Add("Text", "Section w430", "Press X to reload application.")
 MyGui.Add("Text", "Section w430", "Press Ctrl+X to terminate application.")
 MyGui.Add("Text", "Section w430", "Private Server Link")
 PSLink := MyGui.Add("Edit", "Section w430", IniRead("settings.ini", "Settings", "PrivateSrverLink"))
+MyGui.Add("Text", "Section w430", "Discord Webhook URL (For Status Updates) (Optional)")
+WebhookURL := MyGui.Add("Edit", "Section w430", IniRead("settings.ini", "Settings", "WebhookURL"))
+MyGui.Add("Text", "Section w430", "Discord User ID (For Getting Pinged) (Webhook Required) Optional)")
+DiscordUserID := MyGui.Add("Edit", "Section w430", IniRead("settings.ini", "Settings", "DiscordUserID"))
 MyGui.Add("Text", "Section w430", "Audio file to play when finished (Optional)")
 SelectedAudio := MyGui.Add("Button", "Default w80", IniRead("settings.ini", "Settings", "SelectedAudioFile"))
 SB := MyGui.Add("StatusBar",, "Hello.")
@@ -26,6 +32,13 @@ MyGui.Show
 
 MsgBox "Note: You will have to click where you spawn in the map yourself."
 
+WebhookSendMessage(msg){
+   WebRequest := ComObject("WinHttp.WinHttpRequest.5.1")
+   WebRequest.Open("POST", WebhookURL.Text, false)
+   WebRequest.SetRequestHeader("Content-Type", "application/json")
+   WebRequest.Send('{"content": "' . msg . '"}')  
+}
+
 
 StartMacro(*)
 {	
@@ -33,6 +46,8 @@ StartMacro(*)
 		countval := 0
 		errored := 0
 		IniWrite PSLink.Text, "settings.ini", "Settings", "PrivateSrverLink"
+		IniWrite WebhookURL.Text, "settings.ini", "Settings", "WebhookURL"
+		IniWrite DiscordUserID.Text, "settings.ini", "Settings", "DiscordUserID"
 		SB.SetText("Starting Macro...")
 		Run(PSLink.Text)
 		Loop {
@@ -97,6 +112,17 @@ StartMacro(*)
 		if PixelSearch(&Px, &Py, 0, 0, A_ScreenWidth, A_ScreenHeight, 0xFF7FFF, 0)
 		{	
 			SoundPlay IniRead("settings.ini", "Settings", "SelectedAudioFile")
+			if WebhookURL != ""
+			{
+				if DiscordUserID != ""
+				{
+					WebhookSendMessage("<@" . DiscordUserID.Text . "> High Risk Detected!")
+				}
+				else
+				{
+					WebhookSendMessage("High Risk Detected!")
+				}
+			}
 			result := MsgBox("High day detected! Stop Searching?",, "YesNo")
 			if (result = "Yes")
 			{	
